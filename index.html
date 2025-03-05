@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iftar Countdown</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .container {
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        #location {
+            font-size: 1em;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+        
+        #iftar-time {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        #countdown {
+            font-size: 2em;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .toggle-btn {
+            padding: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        /* Dark Mode */
+        
+        .dark {
+            background: #121212;
+            color: #fff;
+        }
+        
+        .dark .container {
+            background: #1E1E1E;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark #iftar-time {
+            color: #ffcc00;
+        }
+        
+        .dark #countdown {
+            color: #ff5722;
+        }
+        
+        .dark .toggle-btn {
+            background: #ffcc00;
+            color: #121212;
+        }
+        /* Light Mode */
+        
+        .light {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .light .container {
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .light #iftar-time {
+            color: #d35400;
+        }
+        
+        .light #countdown {
+            color: #d32f2f;
+        }
+        
+        .light .toggle-btn {
+            background: #333;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Iftar Countdown</h1>
+        <p id="location">Menunggu izin lokasi...</p>
+        <p id="iftar-time">Mengambil waktu iftar...</p>
+        <p id="countdown">Menghitung waktu...</p>
+        <button class="toggle-btn" onclick="toggleMode()">🌞 Ganti Mode</button>
+    </div>
+
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                document.getElementById("location").innerText = "Geolocation tidak didukung.";
+            }
+        }
+
+        function showPosition(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+            getCityName(lat, lon);
+            getIftarTime(lat, lon);
+        }
+
+        function showError(error) {
+            document.getElementById("location").innerText = "Gagal mendapatkan lokasi.";
+        }
+
+        async function getCityName(lat, lon) {
+            try {
+                let response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                let data = await response.json();
+                let city = data.address.city || data.address.town || data.address.village || "Lokasi tidak diketahui";
+                document.getElementById("location").innerText = `📍 ${city}`;
+            } catch (error) {
+                document.getElementById("location").innerText = "Gagal mendapatkan nama lokasi.";
+            }
+        }
+
+        async function getIftarTime(lat, lon) {
+            try {
+                let response = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2`);
+                if (!response.ok) {
+                    throw new Error("Gagal mengambil data dari API");
+                }
+                let data = await response.json();
+                let maghribTime = data.data.timings.Maghrib;
+
+                document.getElementById("iftar-time").innerText = `🌙 Waktu Berbuka: ${maghribTime}`;
+                startCountdown(maghribTime);
+            } catch (error) {
+                document.getElementById("iftar-time").innerText = "Gagal mengambil waktu iftar.";
+            }
+        }
+
+        function startCountdown(iftarTime) {
+            function updateCountdown() {
+                let now = new Date();
+                let [hours, minutes] = iftarTime.split(":").map(Number);
+                let iftar = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+
+                let diff = iftar - now;
+
+                if (diff <= 0) {
+                    document.getElementById("countdown").innerText = "🍽️ Waktunya berbuka!";
+                    return;
+                }
+
+                let h = Math.floor(diff / 3600000);
+                let m = Math.floor((diff % 3600000) / 60000);
+                let s = Math.floor((diff % 60000) / 1000);
+
+                document.getElementById("countdown").innerText = `${h} jam ${m} menit ${s} detik`;
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        function toggleMode() {
+            let body = document.body;
+            let button = document.querySelector(".toggle-btn");
+
+            if (body.classList.contains("dark")) {
+                body.classList.remove("dark");
+                body.classList.add("light");
+                button.innerText = "🌙 Ganti Mode";
+            } else {
+                body.classList.remove("light");
+                body.classList.add("dark");
+                button.innerText = "🌞 Ganti Mode";
+            }
+
+            localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
+        }
+
+        // Atur tema sesuai preferensi sistem atau localStorage
+        function setInitialTheme() {
+            let savedTheme = localStorage.getItem("theme");
+            if (savedTheme) {
+                document.body.classList.add(savedTheme);
+            } else {
+                document.body.classList.add(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            }
+        }
+
+        setInitialTheme();
+        getLocation();
+    </script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@ A lightweight, responsive web app that shows the countdown to Iftar (Maghrib) ti
 
 ## 🌐 Live Preview
 
-🔗 [GitHub Pages (optional link)](https://iftar-countdown.vercel.app/)  
+🔗 [Iftar Countdownt](https://iftar-countdown.vercel.app/)  
 📱 Mobile-friendly and responsive!
 
 ---
